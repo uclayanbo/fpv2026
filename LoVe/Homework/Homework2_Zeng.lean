@@ -36,16 +36,26 @@ Section 3.3 in the Hitchhiker's Guide.
 Think about the similarity to the type inhabitation problems of HW1! -/
 
 @[autogradedProof 1] theorem B (a b c : Prop) :
-  (a → b) → (c → a) → c → b :=
-  sorry
+  (a → b) → (c → a) → c → b := by
+  intro hab hca hc
+  apply hab
+  exact hca hc
+  done
 
 @[autogradedProof 1] theorem S (a b c : Prop) :
-  (a → b → c) → (a → b) → a → c :=
-  sorry
+  (a → b → c) → (a → b) → a → c := by
+  intro habc hab ha
+  apply habc ha
+  exact hab ha
+  done
 
 @[autogradedProof 1] theorem more_nonsense (a b c : Prop) :
-  (c → (a → b) → a) → c → b → a :=
-  sorry
+  (c → (a → b) → a) → c → b → a := by
+  intro hcfa hc hb
+  apply hcfa hc
+  intro hab
+  exact hb
+  done
 
 /- For an extra challenge: translate the `weak_peirce` type inhabitation
 problem from HW1 into a theorem statement, and prove the theorem! -/
@@ -65,8 +75,15 @@ Hints:
   for `False` at some point in the proof. -/
 
 @[autogradedProof 1] theorem about_Impl (a b : Prop) :
-  ¬ a ∨ b → a → b :=
-  sorry
+  ¬ a ∨ b → a → b := by
+  rw [Not]
+  intro hab ha
+  apply Or.elim hab
+  . intro hna
+    exact False.elim (hna ha)
+  . intro hb
+    exact hb
+  done
 
 /- ### 2.2 (2 points).
 
@@ -114,20 +131,47 @@ Hints:
 
 @[autogradedProof 2, validAxioms #[Quot.sound, propext, funext]]
 theorem EM_of_DN :
-  DoubleNegation → ExcludedMiddle :=
-  sorry
+  DoubleNegation → ExcludedMiddle := by
+  rw [DoubleNegation]
+  intro dn a
+  apply dn
+  intro hdn
+  apply hdn
+  apply Or.inr
+  rw [Not]
+  intro ha
+  exact hdn (Or.inl ha)
+  done
 
 /- Here are a few more implications.
 We state them `sorry`ed here, for reference and use;
 you don't need to prove these for this homework. -/
 
 theorem Peirce_of_EM :
-  ExcludedMiddle → Peirce :=
-  sorry
+  ExcludedMiddle → Peirce := by
+  rw [ExcludedMiddle]
+  intro em a b haba
+  apply Or.elim (em a)
+  . intro ha
+    exact ha
+  . rw [Not]
+    intro hna
+    apply haba
+    intro ha
+    exact False.elim (hna ha)
+  done
 
 theorem DN_of_Peirce :
-  Peirce → DoubleNegation :=
-  sorry
+  Peirce → DoubleNegation := by
+  rw [Peirce]
+  intro p a dna
+  apply p a
+
+
+
+  rw [not]
+
+  done
 
 /- ### 2.3 (2 points).
 
@@ -136,6 +180,43 @@ We have three of the six possible implications between `ExcludedMiddle`,
 exploiting the three theorems we already have. -/
 
 -- enter your solution here
+theorem EM_of_Peirce : Peirce → ExcludedMiddle := by
+  rw [Peirce]
+  intro p a
+  apply Or.elim (p a b)
+
+
+
+
+  done
+
+
+
+
+theorem Peirce_of_DN : DoubleNegation → Peirce := by
+  rw [DoubleNegation]
+  intro dn a
+  apply dn
+
+  done
+
+
+
+theorem DN_of_EM : ExcludedMiddle → DoubleNegation := by
+  rw [ExcludedMiddle]
+  intro em a dna
+  apply Or.elim (em a)
+  . intro ha
+    exact ha
+  . rw [Not]
+    intro hna
+    apply
+
+
+  done
+
+
+
 
 /- ## Question 3 (3 points): Equality
 
@@ -210,7 +291,7 @@ definition, you can use `rw`.) -/
 @[autogradedProof 3,
   validAxioms #[LoVe.BackwardProofs.fermats_last_theorem, Quot.sound, propext, funext, Classical.choice]]
 theorem pythagorean_triple_not_all_squares (a b c : ℕ) :
-  IsPythagoreanTriple a b c → ¬(IsSquare a ∧ IsSquare b ∧ IsSquare c) :=
+  IsPythagoreanTriple a b c → ¬(IsSquare a ∧ IsSquare b ∧ IsSquare c) := by
   sorry
 
 end BackwardProofs
