@@ -135,12 +135,12 @@ theorem EM_of_DN :
   rw [DoubleNegation]
   intro dn a
   apply dn
-  intro hdn
-  apply hdn
+  intro hnana
+  apply hnana
   apply Or.inr
   rw [Not]
   intro ha
-  exact hdn (Or.inl ha)
+  exact hnana (Or.inl ha)
   done
 
 /- Here are a few more implications.
@@ -164,13 +164,10 @@ theorem Peirce_of_EM :
 theorem DN_of_Peirce :
   Peirce → DoubleNegation := by
   rw [Peirce]
-  intro p a dna
-  apply p a
-
-
-
-  rw [not]
-
+  intro p a hdna
+  apply p a False
+  intro hna
+  contradiction
   done
 
 /- ### 2.3 (2 points).
@@ -183,40 +180,35 @@ exploiting the three theorems we already have. -/
 theorem EM_of_Peirce : Peirce → ExcludedMiddle := by
   rw [Peirce]
   intro p a
-  apply Or.elim (p a b)
-
-
-
-
+  apply p
+  intro hanab
+  apply Or.inr
+  rw [Not]
+  intro ha
+  exact hanab (Or.inl ha)
   done
-
-
-
 
 theorem Peirce_of_DN : DoubleNegation → Peirce := by
   rw [DoubleNegation]
-  intro dn a
-  apply dn
-
+  intro dn a b haba
+  apply dn a
+  rw [Not]
+  intro hna
+  apply hna
+  apply haba
+  intro ha
+  exact False.elim (hna ha)
   done
-
-
 
 theorem DN_of_EM : ExcludedMiddle → DoubleNegation := by
   rw [ExcludedMiddle]
-  intro em a dna
+  intro em a hdna
   apply Or.elim (em a)
   . intro ha
     exact ha
-  . rw [Not]
-    intro hna
-    apply
-
-
+  . intro hna
+    contradiction
   done
-
-
-
 
 /- ## Question 3 (3 points): Equality
 
@@ -244,12 +236,18 @@ using `Eq.symm`, `Eq.trans`, or `Eq.subst`. You should not use any tactics
 besides `apply`, `exact`, and `rfl`. -/
 
 @[autogradedProof 1, validAxioms #[LoVe.BackwardProofs.symmtrans]]
-theorem my_symm (h : b = a) : a = b :=
-  sorry
+theorem my_symm (h : b = a) : a = b := by
+  apply symmtrans
+  apply rfl
+  exact h
+  done
 
 @[autogradedProof 2, validAxioms #[LoVe.BackwardProofs.symmtrans]]
-theorem my_trans (h1 : a = b) (h2 : b = c) : a = c :=
-  sorry
+theorem my_trans (h1 : a = b) (h2 : b = c) : a = c := by
+  apply symmtrans
+  apply h1
+  exact symmtrans rfl h2
+  done
 
 end
 
@@ -292,7 +290,32 @@ definition, you can use `rw`.) -/
   validAxioms #[LoVe.BackwardProofs.fermats_last_theorem, Quot.sound, propext, funext, Classical.choice]]
 theorem pythagorean_triple_not_all_squares (a b c : ℕ) :
   IsPythagoreanTriple a b c → ¬(IsSquare a ∧ IsSquare b ∧ IsSquare c) := by
-  sorry
+  rw [IsPythagoreanTriple]
+  intro hipt hpsq
+
+  apply hpsq.elim
+  intro hisqa hisqbc
+  apply Exists.elim hisqa
+  intro u hu
+
+
+  apply hisqbc.elim
+  intro hisqb hisqc
+
+  apply Exists.elim hisqb
+  intro v hv
+  apply Exists.elim hisqc
+  intro w hw
+
+  apply fermats_last_theorem u v 4
+  decide
+
+  apply Exists.intro w
+  apply square_square
+  rw [←hu, ←hv, ←hw]
+  exact hipt
+
+  done
 
 end BackwardProofs
 end LoVe
