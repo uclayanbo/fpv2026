@@ -60,6 +60,16 @@ Think about the similarity to the type inhabitation problems of HW1! -/
 /- For an extra challenge: translate the `weak_peirce` type inhabitation
 problem from HW1 into a theorem statement, and prove the theorem! -/
 
+theorem weakPeirce (a b : Prop) : ((((a → b) → a) → a) → b) → b := by
+  intro wp
+  apply wp
+  intro haba
+  apply haba
+  intro ha
+  apply wp
+  intro haba2
+  apply ha
+  done
 
 /- ## Question 2 (5 points): Logical Connectives
 
