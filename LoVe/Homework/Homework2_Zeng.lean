@@ -188,6 +188,13 @@ theorem EM_of_Peirce : Peirce → ExcludedMiddle := by
   exact hanab (Or.inl ha)
   done
 
+theorem EM_of_Peirce2 : Peirce → ExcludedMiddle := by
+  intro p
+  apply EM_of_DN
+  apply DN_of_Peirce
+  exact p
+  done
+
 theorem Peirce_of_DN : DoubleNegation → Peirce := by
   rw [DoubleNegation]
   intro dn a b haba
@@ -200,6 +207,13 @@ theorem Peirce_of_DN : DoubleNegation → Peirce := by
   exact False.elim (hna ha)
   done
 
+theorem Peirce_of_DN2 : DoubleNegation → Peirce := by
+  intro dn
+  apply Peirce_of_EM
+  apply EM_of_DN
+  exact dn
+  done
+
 theorem DN_of_EM : ExcludedMiddle → DoubleNegation := by
   rw [ExcludedMiddle]
   intro em a hdna
@@ -208,6 +222,13 @@ theorem DN_of_EM : ExcludedMiddle → DoubleNegation := by
     exact ha
   . intro hna
     contradiction
+  done
+
+theorem DN_of_EM2 : ExcludedMiddle → DoubleNegation := by
+  intro em
+  apply DN_of_Peirce
+  apply Peirce_of_EM
+  exact em
   done
 
 /- ## Question 3 (3 points): Equality
@@ -291,30 +312,23 @@ definition, you can use `rw`.) -/
 theorem pythagorean_triple_not_all_squares (a b c : ℕ) :
   IsPythagoreanTriple a b c → ¬(IsSquare a ∧ IsSquare b ∧ IsSquare c) := by
   rw [IsPythagoreanTriple]
-  intro hipt hpsq
-
-  apply hpsq.elim
+  intro ipt isq3
+  apply isq3.elim
   intro hisqa hisqbc
   apply Exists.elim hisqa
-  intro u hu
-
-
+  intro x ax2
   apply hisqbc.elim
   intro hisqb hisqc
-
   apply Exists.elim hisqb
-  intro v hv
+  intro y by2
   apply Exists.elim hisqc
-  intro w hw
-
-  apply fermats_last_theorem u v 4
+  intro z cz2
+  apply fermats_last_theorem x y 4
   decide
-
-  apply Exists.intro w
+  apply Exists.intro z
   apply square_square
-  rw [←hu, ←hv, ←hw]
-  exact hipt
-
+  rw [← ax2, ← by2, ← cz2]
+  exact ipt
   done
 
 end BackwardProofs
