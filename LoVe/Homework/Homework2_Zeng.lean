@@ -68,7 +68,7 @@ theorem weakPeirce (a b : Prop) : ((((a → b) → a) → a) → b) → b := by
   intro ha
   apply wp
   intro haba2
-  apply ha
+  exact ha
   done
 
 /- ## Question 2 (5 points): Logical Connectives
@@ -219,9 +219,7 @@ theorem Peirce_of_DN : DoubleNegation → Peirce := by
 
 theorem Peirce_of_DN2 : DoubleNegation → Peirce := by
   intro dn
-  apply Peirce_of_EM
-  apply EM_of_DN
-  exact dn
+  exact Peirce_of_EM (EM_of_DN dn)
   done
 
 theorem DN_of_EM : ExcludedMiddle → DoubleNegation := by
@@ -236,9 +234,7 @@ theorem DN_of_EM : ExcludedMiddle → DoubleNegation := by
 
 theorem DN_of_EM2 : ExcludedMiddle → DoubleNegation := by
   intro em
-  apply DN_of_Peirce
-  apply Peirce_of_EM
-  exact em
+  exact DN_of_Peirce (Peirce_of_EM em)
   done
 
 /- ## Question 3 (3 points): Equality
