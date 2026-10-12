@@ -120,22 +120,18 @@ rules for `∀`, `∨`, and `↔`. -/
   Iff.intro
     (assume hex : ∀x, p x ∨ q x
     assume x : α
-    show q x ∨ p x from
-      Or.elim (hex x)
-        (assume hpx : p x
-        show q x ∨ p x from Or.inr hpx)
-        (assume hqx : q x
-        show q x ∨ p x from Or.inl hqx))
+    show q x ∨ p x from Or.elim (hex x)
+      (assume hp : p x
+      show q x ∨ p x from Or.inr hp)
+      (assume hq : q x
+      show q x ∨ p x from Or.inl hq))
     (assume hpost : ∀x, q x ∨ p x
     assume x : α
-    show p x ∨ q x from
-      Or.elim (hpost x)
-        (assume hqx : q x
-        show p x ∨ q x from Or.inr hqx)
-        (assume hpx : p x
-        show p x ∨ q x from Or.inl hpx))
-
-
+    show p x ∨ q x from Or.elim (hpost x)
+      (assume hq : q x
+      show p x ∨ q x from Or.inr hq)
+      (assume hp : p x
+      show p x ∨ q x from Or.inl hp))
 
 namespace Quasicontractibility
 
@@ -221,7 +217,7 @@ theorem exists_assoc_inj_of_quasicontractible {α : Type} :
       have haa' : a = a' := hqc a a'
       have hbb' : b = b' := hqc b b'
       show a = a' ∧ b = b' from And.intro haa' hbb'
-  Exists.intro f (And.intro hassociative hinjective)
+    Exists.intro f (And.intro hassociative hinjective)
 
 /- In fact, it turns out that functions that are both injective and associative
 *only* exist on quasicontractible types! That is, if there exists an
@@ -259,7 +255,7 @@ theorem quasicontractible_of_exists_assoc_inj {α : Type} :
     And.left ((And.right hai) (f a b) b a (f b b) ((And.left hai) a b b))
   have hb : b = f a b :=
     And.right ((And.right hai) (f a a) b a (f a b) ((And.left hai) a a b))
-  rw [hb, ha]
+  rw [← ha, ← hb]
   done
 
 /- 3.4 (1 point). Using `quasicontractible_of_exists_assoc_inj`, prove that
