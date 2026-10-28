@@ -25,9 +25,7 @@ You've gotten used to the mechanisms of Lean at this point. Question 4 on this
 assignment, especially, is a puzzle that will be very helpful for you to think about
 on your own! (Dependent type theory is puzzling and you need to struggle with these
 puzzles to fully understand it.) We're still learning how proofs and programs interact,
-but at this point you've had practice producing these proofs.
-
- -/
+but at this point you've had practice producing these proofs. -/
 
 /- ## Question 1 (4 points): Dot Notation
 
@@ -97,7 +95,7 @@ def Point.smul (n : Nat) (p : Point Nat) :=
   Point.mk (n * p.x) (n * p.y)
 
 #eval p
-#eval p.smul 3  -- {x := 3, y := 6}
+#eval p.smul 3  -- {x := 30, y := 60}
 
 /- It is common to use a similar trick with the `List.map` function, which takes
 a list as its second non-implicit argument. -/
@@ -117,11 +115,10 @@ Write an `#eval` statement with dot notation achieving the
 same effect as the above. Check that they output the same values. -/
 
 -- write your solution here
+#eval xs.map f
 
 end
 end LoVe
-
-
 
 /- ### 1.2 (1 point).
 
@@ -130,7 +127,8 @@ Define the function `List.mySum` that sums the elements of a
 
 @[autogradedDef 1, validTactics #[rfl, simp [List.mySum]]]
 def List.mySum : List ℕ → ℕ
-:= sorry
+  | [] => 0
+  | x :: xs => xs.mySum + x
 
 namespace LoVe
 
@@ -140,8 +138,9 @@ Write an `#eval` statement using dot notation that achieves
 the same effect as the one below: -/
 
 #eval List.mySum [1, 2, 3, 4]  -- 10
--- write your solution here
 
+-- write your solution here
+#eval [1, 2, 3, 4].mySum
 
 /- Dot notation even works for proofs! If `hpq : P ∧ Q`, then `hpq.left : P`
 is syntax for `And.left hpq`. (Note that `∧` is syntax for the Proposition `And`.)
@@ -152,7 +151,7 @@ Write as short of a term mode proof as you can of the
 following lemma, using dot notation at least once: -/
 
 lemma dotAndSwap (P Q R : Prop) (hpq : P ∧ Q ∧ R) : Q ∧ P :=
-sorry
+  And.intro (hpq.right).left hpq.left
 
 /- ### Golf bonus (0 points).
 
@@ -219,7 +218,14 @@ then it is left-commutative. -/
 
 @[autogradedProof 1] theorem leftCommutative_of_commutative_associative {α : Type} :
   ∀ (f : α → α → α), Commutative f ∧ Associative f → LeftCommutative f :=
-  sorry
+  fix f : α → α → α
+  assume hca : Commutative f ∧ Associative f
+  fix a a' b : α
+  have hcommutative : Commutative f := hca.left
+  have hassociative : Associative f := hca.right
+  have h1 : f (f a b) a' = f a (f b a') := hassociative a b a'
+  have h2 : f a' (f a b) = f (f a b) a' := hcommutative a' (f a b)
+  show f a (f a' b) = f a' (f a b) from by rw [h2, h1, hcommutative a' b]
 
 /- ### 2.2 (4 points).
 
@@ -239,16 +245,22 @@ Here are some helpful reminders for the proofs:
 * The `contradiction` tactic can prove any goal (including `False`) if you have
   an "obviously" impossible hypothesis in your context (e.g., `true = false`) -/
 
-def g : sorry := sorry
+def g (a b : ℕ) : ℕ := 2 * b
 
 @[autogradedProof 1] theorem g_leftCommutative : LeftCommutative g :=
-  sorry
+  fix a a' b : ℕ
+  show g a (g a' b) = g a' (g a b) from rfl
 
 @[autogradedProof 1] theorem g_not_commutative : ¬Commutative g :=
-  sorry
+  assume hcommutative : Commutative g
+  have hfalse : 4 = 2 := hcommutative 1 2
+  show False from by contradiction
 
-@[autogradedProof 1] theorem g_not_associative : ¬Associative g :=
-  sorry
+@[autogradedProof 1] theorem g_not_associative : ¬Associative g := by
+  intro hassociative
+  have hfalse : 2 = 4 := hassociative 1 1 1
+  contradiction
+  done
 
 /- Now that we've seen some properties of left-commutativity in the abstract,
 let's look at its significance in the context that motivated its definition in
@@ -276,9 +288,24 @@ def foldr {α β : Type} : (α → β → β) → β → List α → β
 
 @[autogradedProof 3] theorem foldl_eq_foldr_of_leftCommutative {α β : Type} :
   ∀ (g : α → β → β) (hg : LeftCommutative g) (z : β) (xs : List α),
-  foldl g z xs = foldr g z xs :=
-  sorry
-
+  foldl g z xs = foldr g z xs := by
+  intro g hg z xs
+  have helper : ∀ (x' : α) (z' : β) (xs' : List α),
+      foldr g (g x' z') xs' = g x' (foldr g z' xs') := by
+    intro x' z' xs'
+    induction xs' with
+    | nil => rfl
+    | cons x xs' ih =>
+      simp [foldr]
+      rw [ih]
+      exact hg x x' (foldr g z' xs')
+  induction xs generalizing z with
+  | nil => rfl
+  | cons x xs ih =>
+    simp [foldl, foldr]
+    rw [ih (g x z)]
+    exact helper x z xs
+  done
 
 /- ### 2.4 (1 point).
 
@@ -290,10 +317,12 @@ equal left and right folds, then that function must be left-commutative. -/
 @[autogradedProof 1] theorem leftCommutative_of_foldl_eq_foldr {α β : Type} :
   ∀ (g : α → β → β),
     (∀ (z : β) (xs : List α), foldl g z xs = foldr g z xs) →
-    LeftCommutative g :=
-  sorry
+    LeftCommutative g := by
+  intro g hex a a' b
+  exact hex b [a', a]
+  done
 
-/- ## Question (7 points): Heterogeneous Lists
+/- ## Question 4 (7 points): Heterogeneous Lists
 
 We've become familiar with `List`s, which contain multiple ordered values of the
 same type. But what if we want to store values of different types? Can this be
@@ -382,9 +411,12 @@ You'll need to complete the type as well as implement the function! -/
 
 @[autogradedDef 1, validTactics #[rfl, simp [HList.append]]]
 -- induction_and_simp 2 2 HList.append]]
-def HList.append {αs βs : List Type} : HList αs → HList βs → sorry
-  := sorry
+def HList.append {αs βs : List Type} : HList αs → HList βs → HList (αs ++ βs)
+  | HList.nil, ys => ys
+  | HList.cons x xs, ys => HList.cons x (HList.append xs ys)
 
+#check HList.append H[14, true] H[false, "hello"]
+#eval HList.append H[14, true] H[false, "hello"]
 
 /- Heterogeneous lists can be used in conjunction with traditional lists to
 store multi-typed tabular data (similar to Pyret, for those who are familiar).
@@ -401,7 +433,6 @@ table is represented by a `List (HList [String, String, Nat])`:
 | "Pawtucket"  | "RI"       | 2860    |
 | "Boston"     | "MA"       | 2110    |
 
-
 But we can also think of a table as a collection of columns: each column
 contains data of a single type and so is a traditional `List`, but since each
 column has a different type, the collection of all the columns must be an
@@ -416,12 +447,13 @@ of this question.
 Let `αs : List Type` represent the types stored in a given row of
 a table with row-wise representation of type `List (HList αs)`. Complete the
 definition of a function below that maps `αs` to some `βs : List Type` such that
-`HList βs` is the type of the column-wise representation of that same table.
- -/
+`HList βs` is the type of the column-wise representation of that same table. -/
 
 @[reducible, autogradedDef 1, validTactics #[rfl, simp [columnwiseType]]]
 def columnwiseType (αs : List Type) : List Type :=
-  sorry
+  match αs with
+  | [] => []
+  | x :: xs => List x :: columnwiseType xs
 
 /-
 ### 4.3 (2 points).
@@ -443,7 +475,9 @@ def HList.tl {α αs} : HList (α :: αs) → HList αs
 @[autogradedDef 2, validTactics #[rfl, simp [listHlistToHlistList]]]
 def listHlistToHlistList :
   ∀ {αs : List Type}, List (HList αs) → HList (columnwiseType αs)
-  := sorry
+  | [], ys => HList.nil
+  | x :: xs, ys => HList.cons
+    (ys.map HList.hd) (listHlistToHlistList (ys.map HList.tl))
 
 /- But what about the other direction? We might be tempted to declare a function
 that turns a collection of columns into a collection of rows. That function
@@ -463,7 +497,6 @@ that we're just *defining* the property; we haven't proved it!) -/
 def length_hllh : Prop :=
   ∀ (α β : Type) (t : HList (columnwiseType [α, β])),
   List.length (hlistListToListHlist t) = List.length (HList.hd t)
-
 
 /-
 ### 4.4 (2 points).
@@ -485,8 +518,12 @@ def pickFromSingletonList {τ} : ∀ {xs : List τ}, List.length xs = 1 → τ
   | x :: _, _ => x
 
 @[autogradedProof 2]
-theorem length_hllh_false : ¬ length_hllh :=
-  sorry
+theorem length_hllh_false : ¬ length_hllh := by
+  intro hlength_hllh
+  have hfalse := hlength_hllh ℕ Empty H[[10], []]
+  have hempty : HList [ℕ, Empty] := pickFromSingletonList hfalse
+  contradiction
+  done
 
 /- ### 4.5 (1 point).
 
@@ -496,18 +533,21 @@ we can only write down one function with type
 and it does not satisfy the property in `length_hllh`. Describe this function's
 behavior and why it is the only function with this type. Then explain what we
 would need to be able to assume about the argument to `hlistListToListHlist` in
-order to create a function that inverts the row-column representation as we
-desire. -/
+order to create a function that inverts the row-column representation as we desire. -/
 
 /-
 Write your answer to part 5 here.
--/
+
+The only function that satisfies this property, as far as I can imagine,
+is one that always returns a [] regardless of input αs. For any other functions,
+if Empty is in αs, there is no way for them to return something of that type.
+It fails the property in `length_hllh` because, as shown above, the Empty type
+will always give trouble when the first column is non-empty. -/
 
 /- A final note! This is not the only possible encoding of a heterogeneous list.
 Below, we declare a type `HList'` that stores heterogeneously typed data but
 does *not* contain any data about the types it contains at type level. We also
-declare a function `HList'.append` that appends two heterogeneous lists of this
-type. -/
+declare a function `HList'.append` that appends two heterogeneous lists of this type. -/
 
 inductive HList'
   | nil : HList'
@@ -524,7 +564,5 @@ type-checks?)
 
 We won't be grading your answers here, but if you'd like to share your thoughts,
 we're happy to read them! -/
-
-
 
 end LoVe
