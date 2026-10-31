@@ -26,28 +26,30 @@ Lean definition below. The definition should distinguish two cases, like `Even`,
 and should not rely on `Even`. -/
 
 inductive Odd : ℕ → Prop
--- supply the missing cases here
+  | one : Odd 1
+  | add_two (k : ℕ) : Odd k → Odd (k + 2)
 
 /- ### 1.2 (1 point).
 
 Give *proof terms* for the following propositions, based on
-your answer to question 2.1. -/
+your answer to question 1.1. -/
 
 @[autogradedProof 0.5] theorem Odd_3 :
-  Odd 3 :=
-  sorry
+  Odd 3 := .add_two _ .one
 
 @[autogradedProof 0.5] theorem Odd_5 :
-  Odd 5 :=
-  sorry
+  Odd 5 := .add_two _ Odd_3
 
 /- ### 1.3 (1 point).
 
 Prove the following theorem by rule induction: -/
 
 @[autogradedProof 1] theorem Even_Odd {n : ℕ} (heven : Even n) :
-  Odd (n + 1) :=
-  sorry
+  Odd (n + 1) := by
+  induction heven with
+  | zero => exact .one
+  | add_two k hk ih => exact .add_two _ ih
+  done
 
 /- ### 1.4 (1 point).
 
@@ -56,8 +58,16 @@ Prove the following theorem using rule induction.
 Hint: Recall that `¬ a` is defined as `a → false`. -/
 
 @[autogradedProof 1] theorem Even_Not_Odd {n : ℕ} (heven : Even n) :
-  ¬ Odd n :=
-  sorry
+  ¬ Odd n := by
+  induction heven with
+  | zero =>
+    intro hodd
+    cases hodd
+  | add_two k hk ih =>
+    intro hodd
+    cases hodd with
+    | add_two => contradiction
+  done
 
 infixl:50 " <+ " => List.Sublist
 
@@ -106,8 +116,9 @@ the `List` constructors in your solution. (Of note, this means that
 `List.Sublist` and the equality operator `=` are not allowed.) -/
 
 -- Fill this in:
-inductive IsIn {α : Type} : α → List α → Prop
-
+inductive IsIn {α : Type} : α → List α → Prop where
+  | start (x : α) (xs : List α) : IsIn x (List.cons x xs)
+  | middle (x x' : α) (xs : List α) : IsIn x xs → IsIn x (List.cons x' xs)
 
 -- For the rest of this problem, we'll redefine the `∈` and `∉` notation to use
 -- your `IsIn` predicate instead of the default.
@@ -135,8 +146,10 @@ Note: you may not use the equality operator `=`, `List.append` (aka `++`), or
 Hint: you may find the `IsIn` (`∈`) predicate you defined above useful! -/
 
 -- Fill this in:
-inductive NoDuplicates {α : Type} : List α → Prop
-
+inductive NoDuplicates {α : Type} : List α → Prop where
+  | empty : NoDuplicates []
+  | add (x : α) (xs : List α) :
+    x ∉ xs → NoDuplicates xs → NoDuplicates (List.cons x xs)
 
 /- ### 2.3 (2 points).
 
@@ -158,8 +171,18 @@ axiom not_in_of_not_in_sublist {α : Type} {x : α} {xs ys : List α} :
 
 @[autogradedProof 2]
 theorem noDuplicates_sublist_of_noDuplicates {α : Type} (xs ys : List α) :
-  NoDuplicates ys → xs <+ ys → NoDuplicates xs :=
-  sorry
+  NoDuplicates ys → xs <+ ys → NoDuplicates xs := by
+  intro hnodup hsub
+  induction hsub with
+  | slnil => exact NoDuplicates.empty
+  | cons a hsub' ih =>
+    cases hnodup with
+    | add _ _ _ hnodup' => exact ih hnodup'
+  | cons_cons a hsub' ih =>
+    cases hnodup with
+    | add _ _ hnosub hnodup' =>
+      exact .add a _ (not_in_of_not_in_sublist hsub' hnosub) (ih hnodup')
+  done
 
 end NoDupSublists
 
@@ -225,17 +248,17 @@ for you to give the general idea of where the proof gets stuck and why it is
 that you can't make progress from there. -/
 
 example : ∀ (xs ys : List String),
-  List.length xs = List.length (appendToAll xs ys) :=
-by
+  List.length xs = List.length (appendToAll xs ys) := by
   intros xs ys
   induction ys with
-  | nil =>
-    sorry
-  | cons y ys ih =>
-    sorry
+  | nil => rfl
+  | cons y ys ih => sorry
 
 /-
 WRITE YOUR ANSWER TO PART 1 HERE
+
+The nil case is doable. In the cons case, it seems we cannot apply the
+inductive hypothesis (ih) to the goal.
 -/
 
 /-! In this problem, we'll explore another approach to proving properties of
@@ -308,8 +331,12 @@ recursion!) -/
   ∀ (P : α → Prop) (f : α → β → α) (z : α) (xs : List β)
     (hinit : P z)
     (hpres : ∀ (acc : α) (x : β), P acc → P (f acc x)),
-    P (List.foldl f z xs) :=
-sorry
+    P (List.foldl f z xs) := by
+  intro P f z xs hinit hpres
+  induction xs generalizing z with
+  | nil => exact hinit
+  | cons x xs ih => exact ih _ (hpres z x hinit)
+  done
 
 /- ### 3.3 (2 points).
 
@@ -329,15 +356,16 @@ the lemma `List.length_map` useful.) -/
 @[autogradedProof 2]
 theorem length_appendToAll : ∀ (xs ys : List String),
   List.length xs = List.length (appendToAll xs ys) :=
-λ xs ys => foldl_oneplace_invariant
-  sorry
-  sorry
-  sorry
-  sorry
+  λ xs ys => foldl_oneplace_invariant
+  (λ acc => List.length xs = List.length acc)
+  (λ acc y => List.map (λ x => x ++ y) acc)
+  xs
+  ys
+  (by rfl)
   (by
-     sorry)
-  (by
-     sorry)
+    intro acc ys hlength
+    simp [List.length_map]
+    exact hlength)
 
 /- While `foldl_oneplace_invariant` is useful, it's not quite powerful enough
 to prove the invariance of certain properties we might care about. We'll explore
@@ -390,9 +418,13 @@ We have stated this proof technique below. Prove its correctness. -/
   ∀ (P : α → List β → Prop) (f : α → β → α) (z : α) (xs : List β)
     (hinit : P z xs)
     (hpres : ∀ (acc : α) (x : β) (xs' : List β),
-               P acc (x :: xs') → P (f acc x) xs'),
-    P (List.foldl f z xs) [] :=
-sorry
+      P acc (x :: xs') → P (f acc x) xs'),
+    P (List.foldl f z xs) [] := by
+  intro P f z xs hinit hpres
+  induction xs generalizing z with
+  | nil => exact hinit
+  | cons x xs ih => exact ih _ (hpres _ _ _ hinit)
+  done
 
 /- ### 3.6 (2 points).
 
@@ -419,15 +451,16 @@ value of type `τ x` is expected. -/
 
 @[autogradedProof 2] theorem length_fold_reverse {α} :
   ∀ (xs : List α), List.length xs = List.length (fold_reverse xs) :=
-λ (xs : List α) =>
-  foldl_twoplace_invariant
-    sorry
-    sorry
-    sorry
-    sorry
-    (by sorry)
-    (by sorry)
-
-
+  λ (xs : List α) => foldl_twoplace_invariant
+  (λ acc rest => List.length xs = List.length acc + List.length rest)
+  (λ acc x => List.cons x acc)
+  []
+  xs
+  (by simp)
+  (by
+    intro acc x xs' hlength
+    simp [List.length_cons] at hlength
+    simp [List.length_cons]
+    rw [hlength, Nat.add_assoc, Nat.add_comm 1])
 
 end LoVe
